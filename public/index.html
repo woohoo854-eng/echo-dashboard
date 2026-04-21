@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<base href="./" />
+<title>Dashboard</title>
+<meta name="viewport" content="width=1600, initial-scale=1" />
+<style>
+  :root {
+    --bg-start: #E4EEF5;
+    --bg-end:   #F9E8DC;
+    --text:     #2B3842;
+    --text-2:   #5F6872;
+    --text-3:   #8792A0;
+    --accent:   #3A5F7D;
+    --warm:     #D68B4E;
+    --pos:      #2F7A5A;
+    --neg:      #A04545;
+    --panel-bg: rgba(255, 255, 255, 0.55);
+    --panel-br: rgba(0, 0, 0, 0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    cursor: none; /* hide cursor on kiosk */
+  }
+
+  .stage {
+    width: 100vw; height: 100vh;
+    padding: 3.5vh 4vw;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr auto;
+    gap: 2.2vh;
+  }
+
+  /* ----- Top row: time + weather ----- */
+  .top {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    align-items: start;
+  }
+  .greeting {
+    font-size: 1.4vw;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 0.8vh;
+  }
+  .time {
+    font-size: 11vw;
+    font-weight: 500;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+  }
+  .time .colon { opacity: 0.4; }
+  .date {
+    font-size: 1.8vw;
+    color: var(--text-2);
+    margin-top: 1vh;
+  }
+
+  .weather-now {
+    text-align: right;
+    padding-top: 0.5vh;
+  }
+  .weather-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1.5vw;
+  }
+  .weather-icon {
+    width: 5vw; height: 5vw;
+  }
+  .weather-temp {
+    font-size: 8vw;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .weather-cond {
+    font-size: 1.5vw;
+    color: var(--text-2);
+    margin-top: 0.5vh;
+  }
+  .weather-hilo {
+    font-size: 1.2vw;
+    color: var(--text-3);
+  }
+
+  /* ----- Panels ----- */
+  .panel {
+    background: var(--panel-bg);
+    border: 0.5px solid var(--panel-br);
+    border-radius: 16px;
+    padding: 1.8vh 1.6vw;
+  }
+
+  .hourly {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 1vw;
+  }
+  .hourly .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4vh;
+  }
+  .hourly .hr {
+    font-size: 1.1vw;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .hourly .ico { width: 2.5vw; height: 2.5vw; }
+  .hourly .tmp {
+    font-size: 1.5vw;
+    font-weight: 500;
+  }
+
+  .daily {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1vw;
+  }
+  .daily .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5vh;
+  }
+  .daily .dy {
+    font-size: 1.2vw;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .daily .ico { width: 3vw; height: 3vw; }
+  .daily .rng { font-size: 1.5vw; font-weight: 500; }
+  .daily .rng .lo { color: var(--text-3); font-weight: 400; }
+
+  /* ----- Ticker ----- */
+  .ticker {
+    display: flex;
+    gap: 2.5vw;
+    align-items: center;
+    font-size: 1.5vw;
+    overflow: hidden;
+  }
+  .ticker .t-item { display: flex; gap: 0.5vw; align-items: baseline; }
+  .ticker .sym { font-weight: 500; color: var(--accent); }
+  .ticker .price { color: var(--text); }
+  .ticker .chg-pos { color: var(--pos); font-weight: 500; }
+  .ticker .chg-neg { color: var(--neg); font-weight: 500; }
+  .ticker .err { color: var(--text-3); font-size: 1.1vw; font-style: italic; }
+
+  /* ----- News ----- */
+  .news {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: 1vh;
+  }
+  .news-source {
+    font-size: 1vw;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--warm);
+    font-weight: 500;
+    margin-bottom: 1vh;
+  }
+  .news-headline {
+    font-size: 2.6vw;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    max-width: 95%;
+    min-height: 6vw; /* reserve space so layout doesn't jump */
+  }
+  .news-fade { opacity: 0; transition: opacity 600ms ease; }
+  .news-show { opacity: 1; transition: opacity 600ms ease; }
+  .news-dots { display: flex; gap: 0.5vw; margin-top: 1.5vh; }
+  .news-dots span {
+    width: 2vw; height: 0.35vh;
+    background: rgba(0,0,0,0.15);
+    border-radius: 2px;
+    transition: background 300ms;
+  }
+  .news-dots span.active { background: var(--accent); }
+
+  .offline-badge {
+    position: fixed;
+    top: 1vh; right: 1vw;
+    font-size: 0.9vw;
+    color: var(--neg);
+    background: rgba(255,255,255,0.7);
+    padding: 0.4vh 0.8vw;
+    border-radius: 999px;
+    display: none;
+  }
+  .offline-badge.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- Top -->
+  <div class="top">
+    <div>
+      <div class="greeting" id="greeting">Good morning</div>
+      <div class="time" id="time">—<span class="colon">:</span>—</div>
+      <div class="date" id="date">—</div>
+    </div>
+    <div class="weather-now">
+      <div class="weather-row">
+        <div id="wx-icon-now"></div>
+        <div class="weather-temp" id="wx-temp">—°</div>
+      </div>
+      <div class="weather-cond" id="wx-cond">—</div>
+      <div class="weather-hilo" id="wx-hilo">—</div>
+    </div>
+  </div>
+
+  <!-- Hourly -->
+  <div class="panel hourly" id="hourly">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Daily -->
+  <div class="panel daily" id="daily">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Ticker -->
+  <div class="panel ticker" id="ticker">
+    <span class="err">Loading markets…</span>
+  </div>
+
+  <!-- News (takes remaining space) -->
+  <div class="news">
+    <div class="news-source" id="news-source">◆ —</div>
+    <div class="news-headline news-show" id="news-headline">—</div>
+    <div class="news-dots" id="news-dots"></div>
+  </div>
+
+</div>
+
+<div class="offline-badge" id="offline">offline</div>
+
+<script>
+// ============================================================
+// Weather icons (inline SVG, color-themed)
+// ============================================================
+const ICON_SUN = (size = '2.5vw', stroke = '#D68B4E') => `
+  <svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+  </svg>`;
+const ICON_CLOUD = (stroke = '#8792A0') => `
+  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 14a5 5 0 015-5 6 6 0 0112 1 4 4 0 01-1 7.9H5a4 4 0 01-1-3.9z"/>
+  </svg>`;
+const ICON_PARTLY = () => `
+  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="8" cy="9" r="3" stroke="#D68B4E"/>
+    <path d="M8 3v1M3 9h1M5 5l0.7 0.7M11 5l-0.7 0.7" stroke="#D68B4E"/>
+    <path d="M7 17a4 4 0 014-4 5 5 0 0110 1 3.5 3.5 0 01-1 6.5H8a3.5 3.5 0 01-1-3.5z" stroke="#8792A0"/>
+  </svg>`;
+const ICON_RAIN = () => `
+  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 12a5 5 0 015-5 6 6 0 0112 1 4 4 0 01-1 7.9H5a4 4 0 01-1-3.9z" stroke="#3A5F7D"/>
+    <path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3" stroke="#3A5F7D"/>
+  </svg>`;
+const ICON_SNOW = () => `
+  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#8792A0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 12a5 5 0 015-5 6 6 0 0112 1 4 4 0 01-1 7.9H5a4 4 0 01-1-3.9z"/>
+    <path d="M8 19v3M12 19v3M16 19v3"/>
+  </svg>`;
+const ICON_STORM = () => `
+  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 12a5 5 0 015-5 6 6 0 0112 1 4 4 0 01-1 7.9H5a4 4 0 01-1-3.9z" stroke="#3A5F7D"/>
+    <path d="M11 14l-2 4h3l-1 4" stroke="#D68B4E" fill="none"/>
+  </svg>`;
+const ICON_FOG = () => `
+  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#8792A0" stroke-width="1.5" stroke-linecap="round">
+    <path d="M3 8h18M3 12h18M3 16h18M5 20h14"/>
+  </svg>`;
+
+// WMO weather codes → icon + label
+// https://open-meteo.com/en/docs → weather_code table
+function codeToIconAndLabel(code) {
+  if (code === 0) return { icon: ICON_SUN(), label: 'Sunny' };
+  if (code === 1) return { icon: ICON_SUN(), label: 'Mostly sunny' };
+  if (code === 2) return { icon: ICON_PARTLY(), label: 'Partly cloudy' };
+  if (code === 3) return { icon: ICON_CLOUD(), label: 'Cloudy' };
+  if (code === 45 || code === 48) return { icon: ICON_FOG(), label: 'Foggy' };
+  if (code >= 51 && code <= 57) return { icon: ICON_RAIN(), label: 'Drizzle' };
+  if (code >= 61 && code <= 67) return { icon: ICON_RAIN(), label: 'Rain' };
+  if (code >= 71 && code <= 77) return { icon: ICON_SNOW(), label: 'Snow' };
+  if (code >= 80 && code <= 82) return { icon: ICON_RAIN(), label: 'Showers' };
+  if (code >= 85 && code <= 86) return { icon: ICON_SNOW(), label: 'Snow showers' };
+  if (code >= 95) return { icon: ICON_STORM(), label: 'Thunderstorm' };
+  return { icon: ICON_CLOUD(), label: '—' };
+}
+
+function bigIconFor(code) {
+  // Bigger version for "now" — just regenerate with larger size via wrapper
+  const { icon, label } = codeToIconAndLabel(code);
+  // Swap the class from 'ico' to use inline sizing
+  return { html: icon.replace('class="ico"', 'style="width:5vw;height:5vw;"'), label };
+}
+
+// ============================================================
+// Clock
+// ============================================================
+function pad(n) { return n.toString().padStart(2, '0'); }
+function greetingFor(h) {
+  if (h < 5)  return 'Good evening';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  if (h < 21) return 'Good evening';
+  return 'Good night';
+}
+function updateClock() {
+  const d = new Date();
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  let h12 = h % 12; if (h12 === 0) h12 = 12;
+  document.getElementById('time').innerHTML =
+    `${h12}<span class="colon">:</span>${pad(m)} <span style="font-size:0.5em; color: var(--text-2); font-weight: 400;">${ampm}</span>`;
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('date').textContent =
+    `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+  document.getElementById('greeting').textContent = greetingFor(h);
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ============================================================
+// Weather
+// ============================================================
+async function refreshWeather() {
+  try {
+    const r = await fetch('api/weather', { cache: 'no-store' });
+    if (!r.ok) throw new Error('weather http ' + r.status);
+    const w = await r.json();
+
+    const nowInfo = bigIconFor(w.current.code);
+    document.getElementById('wx-icon-now').innerHTML = nowInfo.html;
+    document.getElementById('wx-temp').textContent = `${w.current.temp}°`;
+    document.getElementById('wx-cond').textContent = `${nowInfo.label} · ${w.city}`;
+    document.getElementById('wx-hilo').textContent =
+      `H ${w.today.high}° · L ${w.today.low}° · Wind ${w.current.wind} mph`;
+
+    // Hourly
+    const hourlyEl = document.getElementById('hourly');
+    hourlyEl.innerHTML = '';
+    w.hourly.forEach((h, i) => {
+      const d = new Date(h.time);
+      let hr = d.getHours();
+      let label;
+      if (i === 0) label = 'Now';
+      else {
+        const ampm = hr >= 12 ? 'p' : 'a';
+        const h12 = hr % 12 || 12;
+        label = `${h12}${ampm}`;
+      }
+      const info = codeToIconAndLabel(h.code);
+      hourlyEl.insertAdjacentHTML('beforeend', `
+        <div class="cell">
+          <div class="hr">${label}</div>
+          ${info.icon}
+          <div class="tmp">${h.temp}°</div>
+        </div>
+      `);
+    });
+
+    // Daily (5)
+    const dailyEl = document.getElementById('daily');
+    dailyEl.innerHTML = '';
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    w.daily.slice(0, 5).forEach(d => {
+      const date = new Date(d.date);
+      const info = codeToIconAndLabel(d.code);
+      dailyEl.insertAdjacentHTML('beforeend', `
+        <div class="cell">
+          <div class="dy">${dayNames[date.getDay()]}</div>
+          ${info.icon}
+          <div class="rng">${d.high}° <span class="lo">${d.low}°</span></div>
+        </div>
+      `);
+    });
+
+    markOnline();
+  } catch (e) {
+    console.warn('[weather]', e);
+    markOffline();
+  }
+}
+
+// ============================================================
+// Tickers
+// ============================================================
+function fmtPrice(n, format) {
+  if (format === 'crypto') return `$${Math.round(n).toLocaleString()}`;
+  return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+function fmtChg(pct) {
+  const sign = pct >= 0 ? '+' : '−';
+  return `${sign}${Math.abs(pct).toFixed(2)}%`;
+}
+async function refreshTickers() {
+  try {
+    const r = await fetch('api/tickers', { cache: 'no-store' });
+    if (!r.ok) throw new Error('tickers http ' + r.status);
+    const { items } = await r.json();
+    const el = document.getElementById('ticker');
+    el.innerHTML = items.map(it => {
+      if (it.error) return `<div class="t-item"><span class="sym">${it.label}</span><span class="err">—</span></div>`;
+      const cls = it.changePct >= 0 ? 'chg-pos' : 'chg-neg';
+      return `<div class="t-item">
+        <span class="sym">${it.label}</span>
+        <span class="price">${fmtPrice(it.price, it.format)}</span>
+        <span class="${cls}">${fmtChg(it.changePct)}</span>
+      </div>`;
+    }).join('');
+    markOnline();
+  } catch (e) {
+    console.warn('[tickers]', e);
+    markOffline();
+  }
+}
+
+// ============================================================
+// News — crossfade rotator
+// ============================================================
+let newsItems = [];
+let newsIdx = 0;
+let newsTimer = null;
+const NEWS_INTERVAL = 12000;
+const NEWS_VISIBLE_DOTS = 5;
+
+async function refreshNews() {
+  try {
+    const r = await fetch('api/news', { cache: 'no-store' });
+    if (!r.ok) throw new Error('news http ' + r.status);
+    const { items } = await r.json();
+    if (items && items.length) {
+      newsItems = items;
+      newsIdx = 0;
+      renderNews();
+      restartNewsRotation();
+    }
+    markOnline();
+  } catch (e) {
+    console.warn('[news]', e);
+    markOffline();
+  }
+}
+function renderNews() {
+  if (!newsItems.length) return;
+  const item = newsItems[newsIdx % newsItems.length];
+  const src = document.getElementById('news-source');
+  const hd = document.getElementById('news-headline');
+  // Crossfade out, swap, fade in
+  hd.classList.remove('news-show');
+  hd.classList.add('news-fade');
+  setTimeout(() => {
+    src.textContent = `◆ ${item.source}`;
+    hd.textContent = item.title;
+    hd.classList.remove('news-fade');
+    hd.classList.add('news-show');
+  }, 600);
+
+  // dots
+  const dotsEl = document.getElementById('news-dots');
+  dotsEl.innerHTML = '';
+  const n = Math.min(NEWS_VISIBLE_DOTS, newsItems.length);
+  const activeDot = newsIdx % n;
+  for (let i = 0; i < n; i++) {
+    dotsEl.insertAdjacentHTML('beforeend', `<span class="${i === activeDot ? 'active' : ''}"></span>`);
+  }
+}
+function restartNewsRotation() {
+  if (newsTimer) clearInterval(newsTimer);
+  newsTimer = setInterval(() => {
+    newsIdx++;
+    renderNews();
+  }, NEWS_INTERVAL);
+}
+
+// ============================================================
+// Offline badge
+// ============================================================
+let offlineHits = 0;
+function markOffline() {
+  offlineHits++;
+  if (offlineHits >= 3) document.getElementById('offline').classList.add('show');
+}
+function markOnline() {
+  offlineHits = 0;
+  document.getElementById('offline').classList.remove('show');
+}
+
+// ============================================================
+// Boot + refresh schedule
+// ============================================================
+refreshWeather();
+refreshTickers();
+refreshNews();
+
+setInterval(refreshWeather, 10 * 60 * 1000); // 10 min
+setInterval(refreshTickers, 60 * 1000);      // 60 sec
+setInterval(refreshNews,    10 * 60 * 1000); // 10 min
+</script>
+
+</body>
+</html>

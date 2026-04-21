@@ -1,0 +1,12 @@
+{
+  "name": "echo-dashboard",
+  "version": "1.0.0",
+  "description": "Kiosk dashboard for ASUS display — clock, weather, tickers, news",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
