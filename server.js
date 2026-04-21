@@ -49,8 +49,14 @@ app.get('/api/weather', async (_req, res) => {
       if (!r.ok) throw new Error(`open-meteo ${r.status}`);
       const j = await r.json();
 
-      // Build 8-hour forward hourly slice starting at current hour
-      const nowIso = new Date().toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
+      // Build 8-hour forward hourly slice starting at current hour.
+      // Open-Meteo returns hourly times in Denver local time ("2026-04-21T08:00"),
+      // so we must compare against Denver local time, not UTC.
+      const nowIso = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Denver',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', hour12: false,
+      }).format(new Date()).replace(', ', 'T').slice(0, 13); // "YYYY-MM-DDTHH"
       const times = j.hourly?.time || [];
       let startIdx = times.findIndex(t => t.slice(0, 13) >= nowIso);
       if (startIdx < 0) startIdx = 0;
